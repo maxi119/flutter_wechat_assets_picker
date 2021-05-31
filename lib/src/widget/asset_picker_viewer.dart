@@ -32,6 +32,7 @@ class AssetPickerViewer<A, P> extends StatefulWidget {
     List<AssetEntity> selectedAssets,
     DefaultAssetPickerProvider selectorProvider,
     SpecialPickerType specialPickerType,
+    bool isShowSelectedIndex = true,
   }) async {
     try {
       final Widget viewer = AssetPickerViewer<AssetEntity, AssetPathEntity>(
@@ -46,6 +47,7 @@ class AssetPickerViewer<A, P> extends StatefulWidget {
           specialPickerType: specialPickerType,
           selectedAssets: selectedAssets,
           selectorProvider: selectorProvider,
+          isShowSelectIndex: isShowSelectedIndex,
         ),
       );
       final PageRouteBuilder<List<AssetEntity>> pageRoute =

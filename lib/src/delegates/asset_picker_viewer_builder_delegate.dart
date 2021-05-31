@@ -165,6 +165,7 @@ class DefaultAssetPickerViewerBuilderDelegate
     AssetPickerProvider<AssetEntity, AssetPathEntity> selectorProvider,
     this.previewThumbSize,
     this.specialPickerType,
+    this.isShowSelectIndex = true,
   }) : super(
           currentIndex: currentIndex,
           previewAssets: previewAssets,
@@ -208,6 +209,8 @@ class DefaultAssetPickerViewerBuilderDelegate
   /// Whether detail widgets displayed.
   /// 详情部件是否显示
   bool isDisplayingDetail = true;
+
+  bool isShowSelectIndex;
 
   @override
   void initStateAndTicker(
@@ -362,7 +365,12 @@ class DefaultAssetPickerViewerBuilderDelegate
             return GestureDetector(
               onTap: () {
                 if (previewAssets == selectedAssets) {
+                  // tap from preview, only selected in previewAssets
                   pageController.jumpToPage(index);
+                } else {
+                  // tap on backdrop, all assets in previewAssets
+                  final pageIndex = previewAssets.indexOf(asset);
+                  pageController.jumpToPage(pageIndex);
                 }
               },
               child: Selector<AssetPickerViewerProvider<AssetEntity>,
@@ -427,15 +435,20 @@ class DefaultAssetPickerViewerBuilderDelegate
 
   @override
   Widget bottomDetailBuilder(BuildContext context) {
+    final bool showPreview = selectorProvider.maxAssets > 1;
+    final double previewHeight = 90;
     return AnimatedPositioned(
       duration: kThemeAnimationDuration,
       curve: Curves.easeInOut,
       bottom: isDisplayingDetail
           ? 0.0
-          : -(Screens.bottomSafeHeight + bottomDetailHeight),
+          : -(Screens.bottomSafeHeight + bottomDetailHeight) +
+              (showPreview ? 0 : previewHeight),
       left: 0.0,
       right: 0.0,
-      height: Screens.bottomSafeHeight + bottomDetailHeight,
+      height: Screens.bottomSafeHeight +
+          bottomDetailHeight -
+          (showPreview ? 0 : previewHeight),
       child: Container(
         padding: EdgeInsets.only(bottom: Screens.bottomSafeHeight),
         color: themeData.canvasColor.withOpacity(0.85),
@@ -444,15 +457,23 @@ class DefaultAssetPickerViewerBuilderDelegate
             ChangeNotifierProvider<
                 AssetPickerViewerProvider<AssetEntity>>.value(
               value: provider,
-              child: SizedBox(
-                height: 90.0,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 5.0),
-                  itemCount: selectedAssets.length,
-                  itemBuilder: bottomDetailItemBuilder,
-                ),
-              ),
+              child: Consumer<AssetPickerViewerProvider<AssetEntity>>(
+                  builder: (context, value, child) {
+                selectedAssets.clear();
+                selectedAssets.addAll(value.currentlySelectedAssets);
+                if (selectorProvider.maxAssets == 1) {
+                  return SizedBox.shrink();
+                }
+                return SizedBox(
+                  height: previewHeight,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 5.0),
+                    itemCount: selectedAssets.length,
+                    itemBuilder: bottomDetailItemBuilder,
+                  ),
+                );
+              }),
             ),
             Container(
               height: 1.0,
@@ -551,7 +572,8 @@ class DefaultAssetPickerViewerBuilderDelegate
               if (specialPickerType == SpecialPickerType.wechatMoment) {
                 return themeData.colorScheme.secondary;
               }
-              return provider.isSelectedNotEmpty
+              return (provider.isSelectedNotEmpty ||
+                      selectorProvider.maxAssets == 1)
                   ? themeData.colorScheme.secondary
                   : themeData.dividerColor;
             }(),
@@ -562,6 +584,9 @@ class DefaultAssetPickerViewerBuilderDelegate
               () {
                 if (specialPickerType == SpecialPickerType.wechatMoment) {
                   return Constants.textDelegate.confirm;
+                }
+                if (selectorProvider.maxAssets == 1) {
+                  return '${Constants.textDelegate.confirm}';
                 }
                 if (provider.isSelectedNotEmpty) {
                   return '${Constants.textDelegate.confirm}'
@@ -589,7 +614,9 @@ class DefaultAssetPickerViewerBuilderDelegate
                 Navigator.of(context).pop(<AssetEntity>[currentAsset]);
                 return;
               }
-              if (provider.isSelectedNotEmpty) {
+              if (selectorProvider.maxAssets == 1) {
+                Navigator.of(context).pop(<AssetEntity>[currentAsset]);
+              } else if (provider.isSelectedNotEmpty) {
                 Navigator.of(context).pop(provider.currentlySelectedAssets);
               }
             },
@@ -611,7 +638,10 @@ class DefaultAssetPickerViewerBuilderDelegate
           if (isSelected) {
             provider.unSelectAssetEntity(asset);
           } else {
-            provider.selectAssetEntity(asset);
+            if (provider.currentlySelectedAssets.length <
+                selectorProvider.maxAssets) {
+              provider.selectAssetEntity(asset);
+            }
           }
         },
         child: AnimatedContainer(
@@ -627,7 +657,7 @@ class DefaultAssetPickerViewerBuilderDelegate
             shape: BoxShape.circle,
           ),
           child: Center(
-            child: isSelected
+            child: isSelected && isShowSelectIndex
                 ? Text(
                     (currentIndex + 1).toString(),
                     style: const TextStyle(
@@ -685,6 +715,9 @@ class DefaultAssetPickerViewerBuilderDelegate
                       previewAssets.elementAt(snapshot.data);
                   final bool isSelected =
                       currentlySelectedAssets.contains(asset);
+                  if (selectorProvider.maxAssets == 1) {
+                    return SizedBox.shrink();
+                  }
                   if (isAppleOS) {
                     return _appleOSSelectButton(isSelected, asset);
                   } else {

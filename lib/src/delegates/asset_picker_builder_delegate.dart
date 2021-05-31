@@ -1189,14 +1189,9 @@ class DefaultAssetPickerBuilderDelegate
               : null,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 12.0),
-            child: Selector<DefaultAssetPickerProvider, List<AssetEntity>>(
-              selector: (BuildContext _, DefaultAssetPickerProvider provider) =>
-                  provider.selectedAssets,
-              builder: (
-                BuildContext _,
-                List<AssetEntity> selectedAssets,
-                Widget __,
-              ) {
+            child: Consumer<DefaultAssetPickerProvider>(
+              builder: (ctx, pr, _) {
+                final selectedAssets = pr.selectedAssets;
                 return Text(
                   isSelectedNotEmpty
                       ? '${Constants.textDelegate.preview}'
@@ -1219,10 +1214,10 @@ class DefaultAssetPickerBuilderDelegate
 
   @override
   Widget selectIndicator(BuildContext context, AssetEntity asset) {
-    return Selector<DefaultAssetPickerProvider, List<AssetEntity>>(
-      selector: (BuildContext _, DefaultAssetPickerProvider provider) =>
-          provider.selectedAssets,
-      builder: (BuildContext _, List<AssetEntity> selectedAssets, Widget __) {
+    return Consumer<DefaultAssetPickerProvider>(
+      builder: (_, conValue, child) {
+        final DefaultAssetPickerProvider providerValue = conValue;
+        final selectedAssets = providerValue.selectedAssets;
         final bool selected = selectedAssets.contains(asset);
         final double indicatorSize = Screens.width / gridCount / 3;
         return Positioned(
@@ -1295,16 +1290,35 @@ class DefaultAssetPickerBuilderDelegate
         return Positioned.fill(
           child: GestureDetector(
             onTap: () async {
-              final List<AssetEntity> result =
-                  await AssetPickerViewer.pushToViewer(
-                context,
-                currentIndex: index,
-                previewAssets: provider.currentAssets,
-                themeData: theme,
-                previewThumbSize: previewThumbSize,
-                specialPickerType:
-                    asset.type == AssetType.video ? specialPickerType : null,
-              );
+              List<AssetEntity> result;
+              if (isSingleAssetMode) {
+                result = await AssetPickerViewer.pushToViewer(
+                  context,
+                  currentIndex: index,
+                  previewAssets: provider.currentAssets,
+                  themeData: theme,
+                  selectedAssets: provider.selectedAssets,
+                  previewThumbSize: previewThumbSize,
+                  selectorProvider: provider as DefaultAssetPickerProvider,
+                  isShowSelectedIndex: false,
+                  specialPickerType:
+                      asset.type == AssetType.video ? specialPickerType : null,
+                );
+              } else {
+                result = await AssetPickerViewer.pushToViewer(
+                  context,
+                  currentIndex: index,
+                  previewAssets: provider.currentAssets,
+                  themeData: theme,
+                  selectedAssets: provider.selectedAssets,
+                  previewThumbSize: previewThumbSize,
+                  selectorProvider: provider as DefaultAssetPickerProvider,
+                  isShowSelectedIndex: false,
+                  specialPickerType:
+                      asset.type == AssetType.video ? specialPickerType : null,
+                );
+              }
+
               if (result != null) {
                 Navigator.of(context).pop(result);
               }
