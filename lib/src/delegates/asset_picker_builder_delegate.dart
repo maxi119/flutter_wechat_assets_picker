@@ -255,7 +255,7 @@ abstract class AssetPickerBuilderDelegate<A, P> {
             padding: isAppleOS
                 ? EdgeInsets.only(
                     top: Screens.topSafeHeight + kToolbarHeight,
-                    bottom: bottomActionBarHeight,
+                    bottom: bottomActionBarHeight + bottomActionBarHeight,
                   )
                 : EdgeInsets.zero,
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -1300,7 +1300,7 @@ class DefaultAssetPickerBuilderDelegate
                   selectedAssets: provider.selectedAssets,
                   previewThumbSize: previewThumbSize,
                   selectorProvider: provider as DefaultAssetPickerProvider,
-                  isShowSelectedIndex: false,
+                  isPreviewOnly: false,
                   specialPickerType:
                       asset.type == AssetType.video ? specialPickerType : null,
                 );
@@ -1313,7 +1313,7 @@ class DefaultAssetPickerBuilderDelegate
                   selectedAssets: provider.selectedAssets,
                   previewThumbSize: previewThumbSize,
                   selectorProvider: provider as DefaultAssetPickerProvider,
-                  isShowSelectedIndex: false,
+                  isPreviewOnly: false,
                   specialPickerType:
                       asset.type == AssetType.video ? specialPickerType : null,
                 );

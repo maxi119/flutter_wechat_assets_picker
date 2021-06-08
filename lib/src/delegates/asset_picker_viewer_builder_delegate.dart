@@ -165,7 +165,7 @@ class DefaultAssetPickerViewerBuilderDelegate
     AssetPickerProvider<AssetEntity, AssetPathEntity> selectorProvider,
     this.previewThumbSize,
     this.specialPickerType,
-    this.isShowSelectIndex = true,
+    this.isPreviewOnly = true,
   }) : super(
           currentIndex: currentIndex,
           previewAssets: previewAssets,
@@ -210,7 +210,7 @@ class DefaultAssetPickerViewerBuilderDelegate
   /// 详情部件是否显示
   bool isDisplayingDetail = true;
 
-  bool isShowSelectIndex;
+  bool isPreviewOnly;
 
   @override
   void initStateAndTicker(
@@ -362,6 +362,7 @@ class DefaultAssetPickerViewerBuilderDelegate
           builder: (BuildContext _, AsyncSnapshot<int> snapshot) {
             final AssetEntity asset = selectedAssets.elementAt(index);
             final bool isViewing = asset == currentAsset;
+
             return GestureDetector(
               onTap: () {
                 if (previewAssets == selectedAssets) {
@@ -459,8 +460,10 @@ class DefaultAssetPickerViewerBuilderDelegate
               value: provider,
               child: Consumer<AssetPickerViewerProvider<AssetEntity>>(
                   builder: (context, value, child) {
-                selectedAssets.clear();
-                selectedAssets.addAll(value.currentlySelectedAssets);
+                if (isPreviewOnly == false) {
+                  selectedAssets.clear();
+                  selectedAssets.addAll(value.currentlySelectedAssets);
+                }
                 if (selectorProvider.maxAssets == 1) {
                   return SizedBox.shrink();
                 }
@@ -657,7 +660,7 @@ class DefaultAssetPickerViewerBuilderDelegate
             shape: BoxShape.circle,
           ),
           child: Center(
-            child: isSelected && isShowSelectIndex
+            child: isSelected && isPreviewOnly
                 ? Text(
                     (currentIndex + 1).toString(),
                     style: const TextStyle(
@@ -765,7 +768,9 @@ class DefaultAssetPickerViewerBuilderDelegate
                   ),
                 ),
                 appBar(context),
-                if (selectedAssets != null) bottomDetailBuilder(context),
+                if (selectedAssets != null &&
+                    (isAppleOS || (selectorProvider?.maxAssets ?? 0) > 1))
+                  bottomDetailBuilder(context),
               ],
             ),
           ),
